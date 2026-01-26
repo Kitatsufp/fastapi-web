@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
-from .. import models, schemas
+import models
+import schemas
 from fastapi import HTTPException, status, Response
 
 

@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from ..import schemas, database, models, token
+import jwt_token
+import schemas
+import database
+import models
 from sqlalchemy.orm import Session
-from ..hashing import Hash
-from ..schemas import Token
+from hashing import Hash
+from schemas import Token
 from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter(
@@ -20,7 +23,7 @@ def login(request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(
     if not Hash.verify(user.password, request.password):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Incorrecct Password")
-    access_token = token.create_access_token(
+    access_token = jwt_token.create_access_token(
         data={"sub": user.email}
     )
     return Token(access_token=access_token, token_type="bearer")
