@@ -1,39 +1,40 @@
-from typing import List
-from fastapi import APIRouter, Depends, status, HTTPException, Response
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from database import get_db
+from oauth2 import get_current_user
 import schemas
-import database
-import models
-import oaut2
-from respository import blog
+from repository import blog
+from enums import PeriodEnum, BlockEnum
 
 router = APIRouter(
     prefix="/blog",
-    tags=['Blogs']
+    tags=["Blog"]
 )
-get_db = database.get_db
 
 
-@router.get('/', response_model=List[schemas.ShowBlog])
-def all(db: Session = Depends(get_db), current_user: schemas.User = Depends(oaut2.get_current_user)):
-    return blog.get_all(db)
+@router.get("/detail")
+def get_air_quality_detail(
+    period: PeriodEnum,
+    block: BlockEnum,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return blog.get_detail(
+        user_id=current_user.id,
+        period_name=period.value,
+        block_name=block.value,
+        db=db
+    )
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED)
-def create(request: schemas.BlogCreate, db: Session = Depends(get_db), current_user: schemas.User = Depends(oaut2.get_current_user)):
-    return blog.create(request, db)
-
-
-@router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
-def destroy(id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(oaut2.get_current_user)):
-    return blog.destroy(id, db)
-
-
-@router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
-def update(id: int, request: schemas.BlogUpdate, db: Session = Depends(get_db), current_user: schemas.User = Depends(oaut2.get_current_user)):
-    return blog.update(id, request, db)
-
-
-@router.get('/{id}', status_code=status.HTTP_200_OK, response_model=schemas.ShowBlog)
-def show(id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(oaut2.get_current_user)):
-    return blog.show(id, db)
+@router.post("/")
+def create_blog(
+    request: schemas.BlogCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return blog.create_blog(
+        request=request,
+        user_id=current_user.id,
+        db=db
+    )

@@ -1,11 +1,11 @@
 from typing import List
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
+from datetime import datetime
 
 
 class BlogBase(BaseModel):
-    title: str
-    body: str
+    air_quality: float
 
 
 class BlogCreate(BlogBase):
@@ -29,9 +29,11 @@ class ShowUser(BaseModel):
 
 
 class ShowBlog(BaseModel):
-    title: str
-    body: str
-    creator: Optional[ShowUser] = None
+    id: int
+    air_quality: float
+    timestamp: datetime
+    period: str
+    block: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -42,7 +44,7 @@ class User(BaseModel):
     password: str
 
 
-class login(BaseModel):
+class Login(BaseModel):
     username: str
     password: str
 
@@ -53,8 +55,5 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: Optional[str] = None
-
-
-class TokenData(BaseModel):
-    email: Optional[str] = None
+    email: str | None = None
+    id: int | None = None
