@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import models
 import schemas
+from zoneinfo import ZoneInfo
 
 
 def get_detail(
@@ -40,7 +41,7 @@ def create_blog(
     user_id: int,
     db: Session
 ):
-    now = datetime.now()
+    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
     hour = now.hour
 
     if 5 <= hour < 11:
