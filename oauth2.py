@@ -7,7 +7,7 @@ import models
 from database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login"   # ⚠️ PHẢI KHỚP PREFIX
+    tokenUrl="/auth/login"
 )
 
 
