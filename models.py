@@ -28,7 +28,7 @@ class Period(Base):
 class TimeBlock(Base):
     __tablename__ = "time_blocks"
     id = Column(Integer, primary_key=True)
-    time = Column(DateTime)
+    time = Column(DateTime, nullable=False)
     block_name = Column(String, nullable=False)
     period_id = Column(Integer, ForeignKey("periods.id"))
     period = relationship("Period", back_populates="blocks")

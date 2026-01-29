@@ -41,7 +41,7 @@ def create_blog(
     user_id: int,
     db: Session
 ):
-    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")).replace(tzinfo=None)
     hour = now.hour
 
     if 5 <= hour < 11:
