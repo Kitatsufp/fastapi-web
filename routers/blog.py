@@ -4,7 +4,9 @@ from database import get_db
 from oauth2 import get_current_user
 import schemas
 from repository import blog
+import repository.blog as blog_repository
 from enums import PeriodEnum, BlockEnum
+from datetime import date
 
 router = APIRouter(
     prefix="/blog",
@@ -36,5 +38,18 @@ def create_blog(
     return blog.create_blog(
         request=request,
         user_id=current_user.id,
+        db=db
+    )
+
+
+@router.get("/daily")
+def get_daily(
+    target_date: date,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return blog_repository.get_daily_data(
+        user_id=current_user.id,
+        target_date=target_date,
         db=db
     )

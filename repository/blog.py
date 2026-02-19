@@ -3,6 +3,7 @@ from datetime import datetime
 import models
 import schemas
 from zoneinfo import ZoneInfo
+from datetime import datetime, date, time
 
 
 def get_detail(
@@ -111,3 +112,36 @@ def create_blog(
     db.refresh(blog)
 
     return blog
+
+
+def get_daily_data(
+    user_id: int,
+    target_date: date,
+    db: Session
+):
+    start = datetime.combine(target_date, time.min)
+    end = datetime.combine(target_date, time.max)
+
+    rows = (
+        db.query(
+            models.TimeBlock.time,
+            models.Blog.air_quality
+        )
+        .join(models.Blog, models.Blog.block_id == models.TimeBlock.id)
+        .join(models.Period, models.TimeBlock.period_id == models.Period.id)
+        .filter(
+            models.Period.user_id == user_id,
+            models.TimeBlock.time >= start,
+            models.TimeBlock.time <= end
+        )
+        .order_by(models.TimeBlock.time)
+        .all()
+    )
+
+    return [
+        {
+            "time": t.strftime("%H:%M:%S"),
+            "air_quality": air_quality
+        }
+        for t, air_quality in rows
+    ]
