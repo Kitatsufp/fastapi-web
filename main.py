@@ -13,7 +13,7 @@ app.include_router(blog.router)
 app.include_router(user.router)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # hoặc ["https://your-vercel-app.vercel.app"]
+    allow_origins=["https://air-quality-dashboard-eta.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
