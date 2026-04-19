@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date
 from database import Base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -43,3 +43,13 @@ class Blog(Base):
 
     block_id = Column(Integer, ForeignKey("time_blocks.id"))
     block = relationship("TimeBlock", back_populates="blogs")
+
+
+class Prediction(Base):
+    __tablename__ = "predictions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, index=True)
+    step = Column(Integer, index=True)
+    value = Column(Float)
+    type = Column(String, index=True)
