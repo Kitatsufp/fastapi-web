@@ -2,6 +2,7 @@ from typing import List
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
+from datetime import date
 
 
 class BlogBase(BaseModel):
@@ -57,3 +58,20 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: str | None = None
     id: int | None = None
+
+
+class PredictionBase(BaseModel):
+    value: float
+
+
+class PredictionCreate(PredictionBase):
+    pass
+
+
+class Prediction(PredictionBase):
+    id: int
+    date: date
+    step: int
+    type: str  # "init" | "realtime"
+
+    model_config = ConfigDict(from_attributes=True)
