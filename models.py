@@ -27,13 +27,16 @@ class Period(Base):
 
 class TimeBlock(Base):
     __tablename__ = "time_blocks"
+
     id = Column(Integer, primary_key=True)
     time = Column(DateTime, nullable=False)
     block_name = Column(String, nullable=False)
+
     period_id = Column(Integer, ForeignKey("periods.id"))
     period = relationship("Period", back_populates="blocks")
 
     blogs = relationship("Blog", back_populates="block")
+    predicts = relationship("Predict", back_populates="block")
 
 
 class Blog(Base):

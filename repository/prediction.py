@@ -37,7 +37,7 @@ def get_detail(
     ]
 
 
-def create_blog(
+def create_predict(
     request: schemas.PredictCreate,
     user_id: int,
     db: Session

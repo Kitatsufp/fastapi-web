@@ -31,7 +31,7 @@ def get_air_quality_detail(
 
 @router.post("/")
 def create_predict(
-    request: schemas.BlogCreate,
+    request: schemas.PredictCreate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
