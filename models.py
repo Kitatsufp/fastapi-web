@@ -45,11 +45,10 @@ class Blog(Base):
     block = relationship("TimeBlock", back_populates="blogs")
 
 
-class Prediction(Base):
-    __tablename__ = "predictions"
+class Predict(Base):
+    __tablename__ = "predicts"
+    id = Column(Integer, primary_key=True)
+    air_quality = Column(Float)
 
-    id = Column(Integer, primary_key=True, index=True)
-    date = Column(Date, index=True)
-    step = Column(Integer, index=True)
-    value = Column(Float)
-    type = Column(String, index=True)
+    block_id = Column(Integer, ForeignKey("time_blocks.id"))
+    block = relationship("TimeBlock", back_populates="predicts")

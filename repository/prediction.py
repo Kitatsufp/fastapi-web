@@ -1,79 +1,147 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from datetime import datetime
 import models
+import schemas
+from zoneinfo import ZoneInfo
+from datetime import datetime, date, time
 
-# 🔹 insert init 8640 mẫu
 
-
-def insert_init(values: list[float], db: Session):
-    today = datetime.utcnow().date()
-
-    db.query(models.Prediction)\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "init")\
-        .delete()
-
-    data = [
-        models.Prediction(
-            date=today,
-            step=i,
-            value=val,
-            type="init"
+def get_detail(
+    user_id: int,
+    period_name: str,
+    block_name: str,
+    db: Session
+):
+    rows = (
+        db.query(
+            models.TimeBlock.time,
+            models.Blog.air_quality
         )
-        for i, val in enumerate(values)
+        .join(models.Blog, models.Blog.block_id == models.TimeBlock.id)
+        .join(models.Period, models.TimeBlock.period_id == models.Period.id)
+        .filter(
+            models.Period.user_id == user_id,
+            models.Period.period_name == period_name,
+            models.TimeBlock.block_name == block_name
+        )
+        .order_by(models.TimeBlock.time)
+        .all()
+    )
+
+    return [
+        {
+            "time": time,
+            "air_quality": air_quality
+        }
+        for time, air_quality in rows
     ]
 
-    db.bulk_save_objects(data)
+
+def create_blog(
+    request: schemas.PredictCreate,
+    user_id: int,
+    db: Session
+):
+    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")).replace(tzinfo=None)
+    hour = now.hour
+
+    if 5 <= hour < 11:
+        period_name = "morning"
+    elif 11 <= hour < 16:
+        period_name = "afternoon"
+    else:
+        period_name = "evening"
+
+    if period_name == "morning":
+        if 5 <= hour < 7:
+            block_name = "early_morning"
+        elif 7 <= hour < 9:
+            block_name = "mid_morning"
+        else:
+            block_name = "late_morning"
+
+    elif period_name == "afternoon":
+        if 11 <= hour < 13:
+            block_name = "early_afternoon"
+        elif 13 <= hour < 15:
+            block_name = "mid_afternoon"
+        else:
+            block_name = "late_afternoon"
+
+    else:
+        if 16 <= hour < 18:
+            block_name = "early_evening"
+        elif 18 <= hour < 20:
+            block_name = "mid_evening"
+        else:
+            block_name = "late_evening"
+
+    period = (
+        db.query(models.Period)
+        .filter(
+            models.Period.user_id == user_id,
+            models.Period.period_name == period_name
+        )
+        .first()
+    )
+
+    if not period:
+        period = models.Period(
+            period_name=period_name,
+            user_id=user_id
+        )
+        db.add(period)
+        db.commit()
+        db.refresh(period)
+
+    block = models.TimeBlock(
+        time=now,
+        block_name=block_name,
+        period_id=period.id
+    )
+    db.add(block)
     db.commit()
+    db.refresh(block)
 
-    return {"status": "init data inserted"}
-
-
-# 🔹 lấy init
-def get_init(db: Session):
-    today = datetime.utcnow().date()
-
-    return db.query(models.Prediction)\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "init")\
-        .order_by(models.Prediction.step)\
-        .all()
-
-
-# 🔹 insert realtime
-def add_realtime(request, db: Session):
-    today = datetime.utcnow().date()
-
-    last_step = db.query(func.max(models.Prediction.step))\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "realtime")\
-        .scalar()
-
-    next_step = 0 if last_step is None else last_step + 1
-
-    if next_step >= 8640:
-        next_step = 0
-
-    db.add(models.Prediction(
-        date=today,
-        step=next_step,
-        value=request.value,
-        type="realtime"
-    ))
-
+    blog = models.Blog(
+        air_quality=request.air_quality,
+        block_id=block.id
+    )
+    db.add(blog)
     db.commit()
+    db.refresh(blog)
 
-    return {"status": "ok"}
+    return blog
 
 
-# 🔹 lấy realtime
-def get_realtime(limit: int, db: Session):
-    today = datetime.utcnow().date()
+def get_daily_data(
+    user_id: int,
+    target_date: date,
+    db: Session
+):
+    start = datetime.combine(target_date, time.min)
+    end = datetime.combine(target_date, time.max)
 
-    return db.query(models.Prediction)\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "realtime")\
-        .order_by(models.Prediction.step.desc())\
-        .limit(limit)\
+    rows = (
+        db.query(
+            models.TimeBlock.time,
+            models.Blog.air_quality
+        )
+        .join(models.Blog, models.Blog.block_id == models.TimeBlock.id)
+        .join(models.Period, models.TimeBlock.period_id == models.Period.id)
+        .filter(
+            models.Period.user_id == user_id,
+            models.TimeBlock.time >= start,
+            models.TimeBlock.time <= end
+        )
+        .order_by(models.TimeBlock.time)
         .all()
+    )
+
+    return [
+        {
+            "time": t.strftime("%H:%M:%S"),
+            "air_quality": air_quality
+        }
+        for t, air_quality in rows
+    ]

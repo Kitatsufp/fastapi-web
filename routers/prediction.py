@@ -1,91 +1,55 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime
-from schemas import PredictionCreate
-
 from database import get_db
-import models
+from oauth2 import get_current_user
+import schemas
+from repository import prediction
+import repository.blog as blog_repository
+from enums import PeriodEnum, BlockEnum
+from datetime import date
 
 router = APIRouter(
-    prefix="/predictions",
-    tags=["Predictions"]
+    prefix="/Predict",
+    tags=["Predict"]
 )
 
 
-# 🔹 Insert 8640 mẫu ban đầu
-@router.post("/init")
-def insert_init(values: list[float], db: Session = Depends(get_db)):
-    today = datetime.utcnow().date()
-
-    # xóa init cũ (nếu muốn reset mỗi ngày)
-    db.query(models.Prediction)\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "init")\
-        .delete()
-
-    data = [
-        models.Prediction(
-            date=today,
-            step=i,
-            value=val,
-            type="init"
-        )
-        for i, val in enumerate(values)
-    ]
-
-    db.bulk_save_objects(data)
-    db.commit()
-    return {"status": "init data inserted"}
+@router.get("/detail")
+def get_air_quality_detail(
+    period: PeriodEnum,
+    block: BlockEnum,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return prediction.get_detail(
+        user_id=current_user.id,
+        period_name=period.value,
+        block_name=block.value,
+        db=db
+    )
 
 
-# 🔹 Lấy 8640 mẫu
-@router.get("/init")
-def get_init(db: Session = Depends(get_db)):
-    today = datetime.utcnow().date()
-
-    return db.query(models.Prediction)\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "init")\
-        .order_by(models.Prediction.step)\
-        .all()
-
-
-# 🔹 Insert realtime
-@router.post("/realtime")
-def add_realtime(request: PredictionCreate, db: Session = Depends(get_db)):
-    today = datetime.utcnow().date()
-
-    last_step = db.query(func.max(models.Prediction.step))\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "realtime")\
-        .scalar()
-
-    next_step = 0 if last_step is None else last_step + 1
-
-    if next_step >= 8640:
-        next_step = 0
-
-    db.add(models.Prediction(
-        date=today,
-        step=next_step,
-        value=request.value,
-        type="realtime"
-    ))
-
-    db.commit()
-    return {"status": "ok"}
-
-# 🔹 Lấy realtime
+@router.post("/")
+def create_predict(
+    request: schemas.BlogCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return prediction.create_predict(
+        request=request,
+        user_id=current_user.id,
+        db=db
+    )
 
 
-@router.get("/realtime")
-def get_realtime(limit: int = 100, db: Session = Depends(get_db)):
-    today = datetime.utcnow().date()
-
-    return db.query(models.Prediction)\
-        .filter(models.Prediction.date == today)\
-        .filter(models.Prediction.type == "realtime")\
-        .order_by(models.Prediction.step.desc())\
-        .limit(limit)\
-        .all()
+@router.get("/daily")
+def get_daily(
+    target_date: date,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return blog_repository.get_daily_data(
+        user_id=current_user.id,
+        target_date=target_date,
+        db=db
+    )

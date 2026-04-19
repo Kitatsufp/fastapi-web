@@ -60,18 +60,27 @@ class TokenData(BaseModel):
     id: int | None = None
 
 
-class PredictionBase(BaseModel):
-    value: float
+class PredictBase(BaseModel):
+    air_quality: float
 
 
-class PredictionCreate(PredictionBase):
+class PredictCreate(PredictBase):
     pass
 
 
-class Prediction(PredictionBase):
+class PredictUpdate(PredictBase):
+    pass
+
+
+class Predict(PredictBase):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ShowPredict(BaseModel):
     id: int
-    date: date
-    step: int
-    type: str  # "init" | "realtime"
+    air_quality: float
+    timestamp: datetime
+    period: str
+    block: str
 
     model_config = ConfigDict(from_attributes=True)
