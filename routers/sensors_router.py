@@ -21,7 +21,7 @@ def get_sensor_detail(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return sensors.get_detail(
+    return sensors_repo.get_detail(
         user_id=current_user.id,
         period_name=period.value,
         block_name=block.value,
@@ -36,7 +36,7 @@ def create_sensor_data(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return sensors.create_sensor_data(
+    return sensors_repo.create_sensor_data(
         request=request,
         user_id=current_user.id,
         db=db
@@ -49,7 +49,7 @@ def get_daily_sensor_data(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return sensors.get_daily_data(
+    return sensors_repo.get_daily_data(
         user_id=current_user.id,
         target_date=target_date,
         db=db
@@ -62,7 +62,7 @@ def get_all_metrics(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return sensors.get_all_metrics_formatted(
+    return sensors_repo.get_all_metrics_formatted(
         user_id=current_user.id,
         target_date=target_date,
         db=db

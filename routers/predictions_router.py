@@ -21,7 +21,7 @@ def get_prediction_detail(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return predictions.get_detail(
+    return predictions_repo.get_detail(
         user_id=current_user.id,
         period_name=period.value,
         block_name=block.value,
@@ -36,7 +36,7 @@ def create_prediction_data(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return predictions.create_prediction_data(
+    return predictions_repo.create_prediction_data(
         request=request,
         user_id=current_user.id,
         db=db
@@ -49,7 +49,7 @@ def get_daily_prediction_data(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return predictions.get_daily_data(
+    return predictions_repo.get_daily_data(
         user_id=current_user.id,
         target_date=target_date,
         db=db
@@ -62,7 +62,7 @@ def get_all_prediction_metrics(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return predictions.get_all_metrics_formatted(
+    return predictions_repo.get_all_metrics_formatted(
         user_id=current_user.id,
         target_date=target_date,
         db=db
