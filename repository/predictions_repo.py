@@ -87,7 +87,21 @@ def create_prediction_data(request: schemas.PredictionDataCreate, user_id: int, 
     db.add(prediction_data)
     db.commit()
     db.refresh(prediction_data)
-    return prediction_data
+
+    # Trả về dict trực tiếp để tránh lỗi lazy loading sau khi session đóng
+    return {
+        "time": now,
+        "period": period_name,
+        "block": block_name,
+        "iaq": prediction_data.iaq,
+        "tvoc": prediction_data.tvoc,
+        "eco2": prediction_data.eco2,
+        "etoh": prediction_data.etoh,
+        "iaq_raw": prediction_data.iaq_raw,
+        "tvoc_raw": prediction_data.tvoc_raw,
+        "eco2_raw": prediction_data.eco2_raw,
+        "etoh_raw": prediction_data.etoh_raw,
+    }
 
 
 def get_daily_data(user_id: int, target_date: date, db: Session):
