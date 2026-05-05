@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from oauth2 import get_current_user
 import schemas
-from repository import predictions
+from repository import predictions_repo
 from enums import PeriodEnum, BlockEnum
 from datetime import date
 
