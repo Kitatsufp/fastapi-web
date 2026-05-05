@@ -30,17 +30,31 @@ def get_prediction_detail(
     )
 
 
-@router.post("/")
+@router.post("/", response_model=schemas.PredictionDataResponse)
 def create_prediction_data(
     request: schemas.PredictionDataCreate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return predictions_repo.create_prediction_data(
+    result = predictions_repo.create_prediction_data(
         request=request,
         user_id=current_user.id,
         db=db
     )
+
+    return {
+        "time": result.block.time,
+        "period": result.block.period.period_name,
+        "block": result.block.block_name,
+        "iaq": result.iaq,
+        "tvoc": result.tvoc,
+        "eco2": result.eco2,
+        "etoh": result.etoh,
+        "iaq_raw": result.iaq_raw,
+        "tvoc_raw": result.tvoc_raw,
+        "eco2_raw": result.eco2_raw,
+        "etoh_raw": result.etoh_raw,
+    }
 
 
 @router.get("/daily")
