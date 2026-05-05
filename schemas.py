@@ -55,6 +55,36 @@ class PredictionDataResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- Prediction Raw ---
+
+class PredictionRawDataBase(BaseModel):
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
+
+
+class PredictionRawDataCreate(PredictionRawDataBase):
+    pass
+
+
+class PredictionRawData(PredictionRawDataBase):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PredictionRawDataResponse(BaseModel):
+    time: datetime
+    period: str
+    block: str
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- User ---
+
 class User(BaseModel):
     name: str
     email: str
@@ -91,6 +121,14 @@ class DailySensorMetrics(BaseModel):
 
 
 class DailyPredictionMetrics(BaseModel):
+    time: str
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
+
+
+class DailyPredictionRawMetrics(BaseModel):
     time: str
     iaq: Optional[float] = None
     tvoc: Optional[float] = None

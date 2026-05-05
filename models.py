@@ -38,6 +38,8 @@ class SensorTimeBlock(Base):
         "SensorData", back_populates="block", uselist=False)
     prediction_data = relationship(
         "PredictionData", back_populates="block", uselist=False)
+    prediction_raw_data = relationship(
+        "PredictionRawData", back_populates="block", uselist=False)
 
 
 class SensorData(Base):
@@ -64,3 +66,17 @@ class PredictionData(Base):
     block_id = Column(Integer, ForeignKey("sensor_time_blocks.id"))
 
     block = relationship("SensorTimeBlock", back_populates="prediction_data")
+
+
+class PredictionRawData(Base):
+    __tablename__ = "prediction_raw_data"
+
+    id = Column(Integer, primary_key=True)
+    iaq = Column(Float, nullable=True)
+    tvoc = Column(Float, nullable=True)
+    eco2 = Column(Float, nullable=True)
+    etoh = Column(Float, nullable=True)
+    block_id = Column(Integer, ForeignKey("sensor_time_blocks.id"))
+
+    block = relationship(
+        "SensorTimeBlock", back_populates="prediction_raw_data")
