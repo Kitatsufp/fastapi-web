@@ -7,7 +7,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Nếu không có → fallback sang SQLite (để chạy local)
 if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///./test.db"
+    DATABASE_URL = "postgresql://fastapi_db_eg5y_user:Hg26JJpa2jyeDXxikgTsefLsqBVucbhc@dpg-d7i7fv4vikkc73ecu7s0-a/fastapi_db_eg5y"
     print("⚠️ Using SQLite fallback")
 else:
     print("✅ Using DATABASE_URL")
