@@ -61,6 +61,10 @@ class PredictionData(Base):
     tvoc = Column(Float, nullable=True)
     eco2 = Column(Float, nullable=True)
     etoh = Column(Float, nullable=True)
+    iaq_raw = Column(Float, nullable=True)
+    tvoc_raw = Column(Float, nullable=True)
+    eco2_raw = Column(Float, nullable=True)
+    etoh_raw = Column(Float, nullable=True)
     block_id = Column(Integer, ForeignKey("sensor_time_blocks.id"))
 
     block = relationship("SensorTimeBlock", back_populates="prediction_data")
