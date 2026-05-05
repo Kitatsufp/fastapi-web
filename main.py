@@ -16,6 +16,7 @@ app.include_router(user.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "*",
         "https://air-quality-dashboard-eta.vercel.app",
         "http://localhost:3000",
         "http://localhost:8080",
