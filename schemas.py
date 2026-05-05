@@ -1,41 +1,57 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
 from datetime import datetime
-from datetime import date
 
 
-class BlogBase(BaseModel):
-    air_quality: float
+class SensorDataBase(BaseModel):
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
 
 
-class BlogCreate(BlogBase):
+class SensorDataCreate(SensorDataBase):
     pass
 
 
-class BlogUpdate(BlogBase):
-    pass
-
-
-class Blog(BlogBase):
+class SensorData(SensorDataBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ShowUser(BaseModel):
-    name: str
-    email: str
-    blogs: List[Blog] = []
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ShowBlog(BaseModel):
-    id: int
-    air_quality: float
-    timestamp: datetime
+class SensorDataResponse(BaseModel):
+    time: datetime
     period: str
     block: str
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
 
+
+class PredictionDataBase(BaseModel):
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
+
+
+class PredictionDataCreate(PredictionDataBase):
+    pass
+
+
+class PredictionData(PredictionDataBase):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PredictionDataResponse(BaseModel):
+    time: datetime
+    period: str
+    block: str
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -43,6 +59,12 @@ class User(BaseModel):
     name: str
     email: str
     password: str
+
+
+class ShowUser(BaseModel):
+    name: str
+    email: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Login(BaseModel):
@@ -56,31 +78,21 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    email: str | None = None
-    id: int | None = None
+    email: Optional[str] = None
+    id: Optional[int] = None
 
 
-class PredictBase(BaseModel):
-    air_quality: float
+class DailySensorMetrics(BaseModel):
+    time: str
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
 
 
-class PredictCreate(PredictBase):
-    pass
-
-
-class PredictUpdate(PredictBase):
-    pass
-
-
-class Predict(PredictBase):
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ShowPredict(BaseModel):
-    id: int
-    air_quality: float
-    timestamp: datetime
-    period: str
-    block: str
-
-    model_config = ConfigDict(from_attributes=True)
+class DailyPredictionMetrics(BaseModel):
+    time: str
+    iaq: Optional[float] = None
+    tvoc: Optional[float] = None
+    eco2: Optional[float] = None
+    etoh: Optional[float] = None
