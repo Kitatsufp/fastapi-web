@@ -12,7 +12,43 @@ router = APIRouter(
 )
 
 
-@router.delete("/clear-all")
+@router.get("/debug")
+def debug_db(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Kiểm tra tất cả bảng có FK trỏ về time_blocks"""
+    try:
+        # Tìm tất cả FK constraint trỏ về time_blocks
+        fk_info = db.execute(text("""
+            SELECT
+                tc.table_name,
+                kcu.column_name,
+                tc.constraint_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+                ON tc.constraint_name = kcu.constraint_name
+            JOIN information_schema.referential_constraints rc
+                ON tc.constraint_name = rc.constraint_name
+            JOIN information_schema.table_constraints tc2
+                ON rc.unique_constraint_name = tc2.constraint_name
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+              AND tc2.table_name = 'time_blocks'
+        """)).fetchall()
+
+        # Đếm rows trong blogs
+        blogs_count = db.execute(text("SELECT COUNT(*) FROM blogs")).scalar()
+
+        return {
+            "fk_constraints_to_time_blocks": [
+                {"table": r[0], "column": r[1], "constraint": r[2]} for r in fk_info
+            ],
+            "blogs_row_count": blogs_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 def clear_all_data(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
