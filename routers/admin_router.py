@@ -4,7 +4,6 @@ from sqlalchemy import text
 from database import get_db
 from oauth2 import get_current_user
 import models
-import traceback
 
 router = APIRouter(
     prefix="/admin",
@@ -19,7 +18,6 @@ def debug_db(
 ):
     """Kiểm tra tất cả bảng có FK trỏ về time_blocks"""
     try:
-        # Tìm tất cả FK constraint trỏ về time_blocks
         fk_info = db.execute(text("""
             SELECT
                 tc.table_name,
@@ -36,7 +34,6 @@ def debug_db(
               AND tc2.table_name = 'time_blocks'
         """)).fetchall()
 
-        # Đếm rows trong blogs
         blogs_count = db.execute(text("SELECT COUNT(*) FROM blogs")).scalar()
 
         return {
@@ -49,6 +46,7 @@ def debug_db(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/clear-all-data")  # ✅ THÊM DECORATOR
 def clear_all_data(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
@@ -57,45 +55,67 @@ def clear_all_data(
         uid = current_user.id
 
         # Lấy period_ids của user
-        period_ids = [r[0] for r in db.execute(
-            text("SELECT id FROM periods WHERE user_id = :uid"), {"uid": uid}
-        ).fetchall()]
+        period_ids = db.execute(
+            text("SELECT id FROM periods WHERE user_id = :uid"),
+            {"uid": uid}
+        ).scalars().all()
 
         if not period_ids:
             return {"message": "Không có dữ liệu để xóa", "user_id": uid}
 
-        pid_list = ",".join(str(i) for i in period_ids)
-
-        # Lấy block_ids từ bảng thực tế trên DB (time_blocks)
-        block_ids = [r[0] for r in db.execute(
-            text(f"SELECT id FROM time_blocks WHERE period_id IN ({pid_list})")
-        ).fetchall()]
+        # Lấy block_ids từ database
+        block_ids = db.execute(
+            text("SELECT id FROM time_blocks WHERE period_id IN (:period_ids)"),
+            {"period_ids": tuple(period_ids)}
+        ).scalars().all()
 
         if block_ids:
-            bid_list = ",".join(str(i) for i in block_ids)
+            # ✅ XÓA BẢNG PHỤ THUỘC TRƯỚC (quan trọng!)
+            # Xóa theo thứ tự: bảng con → bảng cha
+            db.execute(
+                text("DELETE FROM blogs WHERE block_id IN (:block_ids)"),
+                {"block_ids": tuple(block_ids)}
+            )
+            db.execute(
+                text("DELETE FROM predicts WHERE block_id IN (:block_ids)"),
+                {"block_ids": tuple(block_ids)}
+            )
+            db.execute(
+                text("DELETE FROM sensor_data WHERE block_id IN (:block_ids)"),
+                {"block_ids": tuple(block_ids)}
+            )
+            db.execute(
+                text("DELETE FROM prediction_data WHERE block_id IN (:block_ids)"),
+                {"block_ids": tuple(block_ids)}
+            )
+            db.execute(
+                text("DELETE FROM prediction_raw_data WHERE block_id IN (:block_ids)"),
+                {"block_ids": tuple(block_ids)}
+            )
 
-            # Xóa blogs + predicts trước (FK -> time_blocks)
+            # ✅ XÓA BẢNG CHÍNH CUỐI CÙNG
             db.execute(
-                text(f"DELETE FROM blogs WHERE block_id IN ({bid_list})"))
-            db.execute(
-                text(f"DELETE FROM predicts WHERE block_id IN ({bid_list})"))
-            db.execute(
-                text(f"DELETE FROM sensor_data WHERE block_id IN ({bid_list})"))
-            db.execute(
-                text(f"DELETE FROM prediction_data WHERE block_id IN ({bid_list})"))
-            db.execute(
-                text(f"DELETE FROM prediction_raw_data WHERE block_id IN ({bid_list})"))
-            db.execute(
-                text(f"DELETE FROM time_blocks WHERE id IN ({bid_list})"))
+                text("DELETE FROM time_blocks WHERE id IN (:block_ids)"),
+                {"block_ids": tuple(block_ids)}
+            )
 
-        # Xóa periods
+        # Xóa periods cuối cùng
         db.execute(
-            text("DELETE FROM periods WHERE user_id = :uid"), {"uid": uid})
+            text("DELETE FROM periods WHERE user_id = :uid"),
+            {"uid": uid}
+        )
 
         db.commit()
-        return {"message": "Đã xóa toàn bộ dữ liệu", "user_id": uid}
+        return {
+            "message": "Đã xóa toàn bộ dữ liệu",
+            "user_id": uid,
+            "deleted_periods": len(period_ids),
+            "deleted_blocks": len(block_ids)
+        }
 
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=500, detail=f"{type(e).__name__}: {str(e)}")
+            status_code=500,
+            detail=f"{type(e).__name__}: {str(e)}"
+        )
