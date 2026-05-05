@@ -30,7 +30,8 @@ def get_prediction_detail(
     )
 
 
-@router.post("/")
+# ✅ thêm response_model
+@router.post("/", response_model=schemas.PredictionDataResponse)
 def create_prediction_data(
     request: schemas.PredictionDataCreate,
     db: Session = Depends(get_db),
