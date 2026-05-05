@@ -15,9 +15,9 @@ def get_detail(
     rows = (
         db.query(
             models.TimeBlock.time,
-            models.Blog.air_quality
+            models.Predict.air_quality
         )
-        .join(models.Blog, models.Blog.block_id == models.TimeBlock.id)
+        .join(models.Predict, models.Predict.block_id == models.TimeBlock.id)
         .join(models.Period, models.TimeBlock.period_id == models.Period.id)
         .filter(
             models.Period.user_id == user_id,
@@ -103,15 +103,15 @@ def create_predict(
     db.commit()
     db.refresh(block)
 
-    blog = models.Blog(
+    predict = models.Predict(
         air_quality=request.air_quality,
         block_id=block.id
     )
-    db.add(blog)
+    db.add(predict)
     db.commit()
-    db.refresh(blog)
+    db.refresh(predict)
 
-    return blog
+    return predict
 
 
 def get_daily_data(
@@ -125,9 +125,9 @@ def get_daily_data(
     rows = (
         db.query(
             models.TimeBlock.time,
-            models.Blog.air_quality
+            models.Predict.air_quality
         )
-        .join(models.Blog, models.Blog.block_id == models.TimeBlock.id)
+        .join(models.Predict, models.Predict.block_id == models.TimeBlock.id)
         .join(models.Period, models.TimeBlock.period_id == models.Period.id)
         .filter(
             models.Period.user_id == user_id,

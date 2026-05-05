@@ -4,7 +4,7 @@ from database import get_db
 from oauth2 import get_current_user
 import schemas
 from repository import prediction
-import repository.blog as blog_repository
+import repository.prediction as prediction_repository
 from enums import PeriodEnum, BlockEnum
 from datetime import date
 
@@ -48,7 +48,7 @@ def get_daily(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return blog_repository.get_daily_data(
+    return prediction_repository.get_daily_data(
         user_id=current_user.id,
         target_date=target_date,
         db=db
