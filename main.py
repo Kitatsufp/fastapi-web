@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from database import engine
-from routers import sensors, predictions, user, authentication
+from routers import sensors_router, predictions_router, user, authentication
 from fastapi.middleware.cors import CORSMiddleware
 import models
 
@@ -9,8 +9,8 @@ app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 
 app.include_router(authentication.router)
-app.include_router(sensors.router)
-app.include_router(predictions.router)
+app.include_router(sensors_router.router)
+app.include_router(predictions_router.router)
 app.include_router(user.router)
 
 app.add_middleware(
