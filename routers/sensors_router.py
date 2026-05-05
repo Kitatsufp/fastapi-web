@@ -30,7 +30,8 @@ def get_sensor_detail(
     )
 
 
-@router.post("/")
+# ✅ thêm response_model
+@router.post("/", response_model=schemas.SensorDataResponse)
 def create_sensor_data(
     request: schemas.SensorDataCreate,
     db: Session = Depends(get_db),

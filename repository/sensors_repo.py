@@ -83,7 +83,17 @@ def create_sensor_data(request: schemas.SensorDataCreate, user_id: int, db: Sess
     db.add(sensor_data)
     db.commit()
     db.refresh(sensor_data)
-    return sensor_data
+
+    # ✅ Trả về dict thay vì object SQLAlchemy để tránh lỗi lazy loading
+    return {
+        "time": now,
+        "period": period_name,
+        "block": block_name,
+        "iaq": sensor_data.iaq,
+        "tvoc": sensor_data.tvoc,
+        "eco2": sensor_data.eco2,
+        "etoh": sensor_data.etoh,
+    }
 
 
 def get_daily_data(user_id: int, target_date: date, db: Session):
