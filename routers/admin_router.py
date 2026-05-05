@@ -74,19 +74,17 @@ def clear_all_data(
         if block_ids:
             bid_list = ",".join(str(i) for i in block_ids)
 
-            # Xóa blogs trước (FK -> time_blocks)
+            # Xóa blogs + predicts trước (FK -> time_blocks)
             db.execute(
                 text(f"DELETE FROM blogs WHERE block_id IN ({bid_list})"))
-
-            # Xóa 3 bảng data
+            db.execute(
+                text(f"DELETE FROM predicts WHERE block_id IN ({bid_list})"))
             db.execute(
                 text(f"DELETE FROM sensor_data WHERE block_id IN ({bid_list})"))
             db.execute(
                 text(f"DELETE FROM prediction_data WHERE block_id IN ({bid_list})"))
             db.execute(
                 text(f"DELETE FROM prediction_raw_data WHERE block_id IN ({bid_list})"))
-
-            # Xóa time_blocks
             db.execute(
                 text(f"DELETE FROM time_blocks WHERE id IN ({bid_list})"))
 
