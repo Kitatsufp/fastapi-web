@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from database import get_db
 from oauth2 import get_current_user
 import models
+import traceback
 
 router = APIRouter(
     prefix="/admin",
@@ -15,43 +17,47 @@ def clear_all_data(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    # Lấy tất cả period_id của user
-    period_ids = [p.id for p in db.query(models.Period.id).filter(
-        models.Period.user_id == current_user.id
-    ).all()]
+    try:
+        uid = current_user.id
 
-    if not period_ids:
-        return {"message": "Không có dữ liệu để xóa", "user_id": current_user.id}
+        # Lấy period_ids của user
+        period_ids = [r[0] for r in db.execute(
+            text("SELECT id FROM periods WHERE user_id = :uid"), {"uid": uid}
+        ).fetchall()]
 
-    # Lấy tất cả block_id thuộc các period đó
-    block_ids = [b.id for b in db.query(models.SensorTimeBlock.id).filter(
-        models.SensorTimeBlock.period_id.in_(period_ids)
-    ).all()]
+        if not period_ids:
+            return {"message": "Không có dữ liệu để xóa", "user_id": uid}
 
-    if block_ids:
-        # Xóa 3 bảng data trước (FK -> sensor_time_blocks)
-        db.query(models.SensorData).filter(
-            models.SensorData.block_id.in_(block_ids)
-        ).delete(synchronize_session=False)
+        pid_list = ",".join(str(i) for i in period_ids)
 
-        db.query(models.PredictionData).filter(
-            models.PredictionData.block_id.in_(block_ids)
-        ).delete(synchronize_session=False)
+        # Lấy block_ids từ bảng thực tế trên DB (time_blocks)
+        block_ids = [r[0] for r in db.execute(
+            text(f"SELECT id FROM time_blocks WHERE period_id IN ({pid_list})")
+        ).fetchall()]
 
-        db.query(models.PredictionRawData).filter(
-            models.PredictionRawData.block_id.in_(block_ids)
-        ).delete(synchronize_session=False)
+        if block_ids:
+            bid_list = ",".join(str(i) for i in block_ids)
 
-        # Xóa blocks
-        db.query(models.SensorTimeBlock).filter(
-            models.SensorTimeBlock.period_id.in_(period_ids)
-        ).delete(synchronize_session=False)
+            # Xóa 3 bảng data trước
+            db.execute(
+                text(f"DELETE FROM sensor_data WHERE block_id IN ({bid_list})"))
+            db.execute(
+                text(f"DELETE FROM prediction_data WHERE block_id IN ({bid_list})"))
+            db.execute(
+                text(f"DELETE FROM prediction_raw_data WHERE block_id IN ({bid_list})"))
 
-    # Xóa periods
-    db.query(models.Period).filter(
-        models.Period.user_id == current_user.id
-    ).delete(synchronize_session=False)
+            # Xóa time_blocks (tên thật trên DB)
+            db.execute(
+                text(f"DELETE FROM time_blocks WHERE id IN ({bid_list})"))
 
-    db.commit()
+        # Xóa periods
+        db.execute(
+            text("DELETE FROM periods WHERE user_id = :uid"), {"uid": uid})
 
-    return {"message": "Đã xóa toàn bộ dữ liệu", "user_id": current_user.id}
+        db.commit()
+        return {"message": "Đã xóa toàn bộ dữ liệu", "user_id": uid}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"{type(e).__name__}: {str(e)}")
