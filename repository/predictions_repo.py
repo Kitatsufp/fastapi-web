@@ -78,30 +78,12 @@ def create_prediction_data(request: schemas.PredictionDataCreate, user_id: int, 
         tvoc=request.tvoc,
         eco2=request.eco2,
         etoh=request.etoh,
-        iaq_raw=request.iaq_raw,
-        tvoc_raw=request.tvoc_raw,
-        eco2_raw=request.eco2_raw,
-        etoh_raw=request.etoh_raw,
         block_id=block.id
     )
     db.add(prediction_data)
     db.commit()
     db.refresh(prediction_data)
-
-    # Trả về dict trực tiếp để tránh lỗi lazy loading sau khi session đóng
-    return {
-        "time": now,
-        "period": period_name,
-        "block": block_name,
-        "iaq": prediction_data.iaq,
-        "tvoc": prediction_data.tvoc,
-        "eco2": prediction_data.eco2,
-        "etoh": prediction_data.etoh,
-        "iaq_raw": prediction_data.iaq_raw,
-        "tvoc_raw": prediction_data.tvoc_raw,
-        "eco2_raw": prediction_data.eco2_raw,
-        "etoh_raw": prediction_data.etoh_raw,
-    }
+    return prediction_data
 
 
 def get_daily_data(user_id: int, target_date: date, db: Session):
@@ -123,11 +105,7 @@ def get_daily_data(user_id: int, target_date: date, db: Session):
             "iaq": prediction_data.iaq,
             "tvoc": prediction_data.tvoc,
             "eco2": prediction_data.eco2,
-            "etoh": prediction_data.etoh,
-            "iaq_raw": prediction_data.iaq_raw,
-            "tvoc_raw": prediction_data.tvoc_raw,
-            "eco2_raw": prediction_data.eco2_raw,
-            "etoh_raw": prediction_data.etoh_raw,
+            "etoh": prediction_data.etoh
         }
         for t, prediction_data in rows
     ]
@@ -136,8 +114,8 @@ def get_daily_data(user_id: int, target_date: date, db: Session):
 def get_all_metrics_formatted(user_id: int, target_date: date, db: Session):
     data = get_daily_data(user_id, target_date, db)
     return {
-        "iaq": [{"time": item["time"], "value": item["iaq"], "raw": item["iaq_raw"]} for item in data if item["iaq"] is not None],
-        "tvoc": [{"time": item["time"], "value": item["tvoc"], "raw": item["tvoc_raw"]} for item in data if item["tvoc"] is not None],
-        "eco2": [{"time": item["time"], "value": item["eco2"], "raw": item["eco2_raw"]} for item in data if item["eco2"] is not None],
-        "etoh": [{"time": item["time"], "value": item["etoh"], "raw": item["etoh_raw"]} for item in data if item["etoh"] is not None]
+        "iaq": [{"time": item["time"], "value": item["iaq"]} for item in data if item["iaq"] is not None],
+        "tvoc": [{"time": item["time"], "value": item["tvoc"]} for item in data if item["tvoc"] is not None],
+        "eco2": [{"time": item["time"], "value": item["eco2"]} for item in data if item["eco2"] is not None],
+        "etoh": [{"time": item["time"], "value": item["etoh"]} for item in data if item["etoh"] is not None]
     }

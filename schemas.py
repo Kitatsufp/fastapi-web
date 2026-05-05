@@ -34,10 +34,6 @@ class PredictionDataBase(BaseModel):
     tvoc: Optional[float] = None
     eco2: Optional[float] = None
     etoh: Optional[float] = None
-    iaq_raw: Optional[float] = None
-    tvoc_raw: Optional[float] = None
-    eco2_raw: Optional[float] = None
-    etoh_raw: Optional[float] = None
 
 
 class PredictionDataCreate(PredictionDataBase):
@@ -56,10 +52,6 @@ class PredictionDataResponse(BaseModel):
     tvoc: Optional[float] = None
     eco2: Optional[float] = None
     etoh: Optional[float] = None
-    iaq_raw: Optional[float] = None
-    tvoc_raw: Optional[float] = None
-    eco2_raw: Optional[float] = None
-    etoh_raw: Optional[float] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -104,7 +96,3 @@ class DailyPredictionMetrics(BaseModel):
     tvoc: Optional[float] = None
     eco2: Optional[float] = None
     etoh: Optional[float] = None
-    iaq_raw: Optional[float] = None
-    tvoc_raw: Optional[float] = None
-    eco2_raw: Optional[float] = None
-    etoh_raw: Optional[float] = None

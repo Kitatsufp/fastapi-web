@@ -30,13 +30,12 @@ def get_prediction_detail(
     )
 
 
-@router.post("/", response_model=schemas.PredictionDataResponse)
+@router.post("/")
 def create_prediction_data(
     request: schemas.PredictionDataCreate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    # predictions_repo.create_prediction_data đã trả về dict sẵn
     return predictions_repo.create_prediction_data(
         request=request,
         user_id=current_user.id,
