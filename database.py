@@ -1,16 +1,20 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from dotenv import load_dotenv
 
-# Lấy biến môi trường
+# Load environment variables
+load_dotenv()
+
+# Get DATABASE_URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Nếu không có → fallback sang SQLite (để chạy local)
+# Validate DATABASE_URL is set
 if not DATABASE_URL:
-    DATABASE_URL = "postgresql://fastapi_db_eg5y_user:Hg26JJpa2jyeDXxikgTsefLsqBVucbhc@dpg-d7i7fv4vikkc73ecu7s0-a/fastapi_db_eg5y"
-    print("⚠️ Using SQLite fallback")
-else:
-    print("✅ Using DATABASE_URL")
+    raise ValueError(
+        "❌ DATABASE_URL not found in environment variables. "
+        "Please set DATABASE_URL in Render Environment Variables."
+    )
 
 # Fix cho PostgreSQL trên Render
 if DATABASE_URL.startswith("postgresql://"):
