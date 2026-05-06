@@ -67,3 +67,14 @@ def get_all_prediction_metrics(
         target_date=target_date,
         db=db
     )
+
+
+@router.delete("/clear_data")
+def clear_prediction_data(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return predictions_repo.clear_prediction_data(
+        user_id=current_user.id,
+        db=db
+    )

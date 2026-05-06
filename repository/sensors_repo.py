@@ -119,3 +119,34 @@ def get_all_metrics_formatted(user_id: int, target_date: date, db: Session):
         "eco2": [{"time": item["time"], "value": item["eco2"]} for item in data if item["eco2"] is not None],
         "etoh": [{"time": item["time"], "value": item["etoh"]} for item in data if item["etoh"] is not None]
     }
+
+
+def clear_sensor_data(user_id: int, db: Session):
+    """Xóa toàn bộ dữ liệu sensor của user"""
+    # Lấy tất cả periods của user
+    periods = db.query(models.Period).filter(
+        models.Period.user_id == user_id
+    ).all()
+
+    deleted_count = 0
+
+    for period in periods:
+        # Lấy tất cả blocks của period
+        blocks = db.query(models.SensorTimeBlock).filter(
+            models.SensorTimeBlock.period_id == period.id
+        ).all()
+
+        for block in blocks:
+            # Xóa sensor data
+            deleted_count += db.query(models.SensorData).filter(
+                models.SensorData.block_id == block.id
+            ).delete()
+
+            # Xóa block
+            db.delete(block)
+
+        # Xóa period
+        db.delete(period)
+
+    db.commit()
+    return {"message": "Sensor data cleared successfully", "deleted_records": deleted_count}

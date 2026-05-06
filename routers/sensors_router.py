@@ -67,3 +67,14 @@ def get_all_metrics(
         target_date=target_date,
         db=db
     )
+
+
+@router.delete("/clear_data")
+def clear_sensor_data(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return sensors_repo.clear_sensor_data(
+        user_id=current_user.id,
+        db=db
+    )
