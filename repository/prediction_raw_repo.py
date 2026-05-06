@@ -1,4 +1,4 @@
-# prediction_raw_repo.py - PHIÊN BẢN TỐI ƯU (FAST)
+# prediction_raw_repo.py - PHIÊN BẢN FIXED
 
 from sqlalchemy.orm import Session
 from datetime import datetime, date, time
@@ -125,61 +125,66 @@ def get_all_metrics_formatted(user_id: int, target_date: date, db: Session):
 
 def clear_prediction_raw_data(user_id: int, db: Session):
     """
-    🚀 PHIÊN BẢN TỐI ƯU - Xóa toàn bộ prediction raw data nhanh chóng
-    Sử dụng bulk delete thay vì loop
+    ✅ FIXED VERSION - Xóa dữ liệu từ trong ra ngoài
+    Đảm bảo cascade delete hoạt động đúng
     """
     try:
-        # Bước 1: Lấy danh sách ID của tất cả periods của user
-        period_ids = db.query(models.Period.id).filter(
+        # Bước 1: Lấy tất cả periods của user
+        periods = db.query(models.Period).filter(
             models.Period.user_id == user_id
         ).all()
 
-        period_ids = [p[0] for p in period_ids]
+        print(f"DEBUG: Found {len(periods)} periods")
+        deleted_count = 0
 
-        if not period_ids:
+        if not periods:
             return {
                 "message": "No prediction raw data found to clear",
                 "deleted_records": 0
             }
 
-        # Bước 2: Lấy danh sách ID của tất cả blocks thuộc các periods
-        block_ids = db.query(models.SensorTimeBlock.id).filter(
-            models.SensorTimeBlock.period_id.in_(period_ids)
-        ).all()
+        # Bước 2: Loại qua từng period và xóa từng cái
+        for period in periods:
+            print(f"DEBUG: Processing period {period.id}")
 
-        block_ids = [b[0] for b in block_ids]
-        deleted_count = 0
+            # Lấy tất cả blocks của period
+            blocks = db.query(models.SensorTimeBlock).filter(
+                models.SensorTimeBlock.period_id == period.id
+            ).all()
 
-        # Bước 3: Xóa prediction raw data (bulk delete - rất nhanh)
-        if block_ids:
-            deleted_count = db.query(models.PredictionRawData).filter(
-                models.PredictionRawData.block_id.in_(block_ids)
-            ).delete(synchronize_session=False)
+            print(f"DEBUG: Found {len(blocks)} blocks in period {period.id}")
 
-        # Bước 4: Xóa sensor time blocks (bulk delete)
-        if block_ids:
-            db.query(models.SensorTimeBlock).filter(
-                models.SensorTimeBlock.id.in_(block_ids)
-            ).delete(synchronize_session=False)
+            # Xóa từng block (sẽ auto xóa prediction_raw_data nhờ relationship)
+            for block in blocks:
+                # Xóa PredictionRawData trực tiếp trước
+                prediction_raw_data_count = db.query(models.PredictionRawData).filter(
+                    models.PredictionRawData.block_id == block.id
+                ).delete(synchronize_session=False)
 
-        # Bước 5: Xóa periods (bulk delete)
-        if period_ids:
-            db.query(models.Period).filter(
-                models.Period.id.in_(period_ids)
-            ).delete(synchronize_session=False)
+                deleted_count += prediction_raw_data_count
+                print(
+                    f"DEBUG: Deleted {prediction_raw_data_count} prediction raw data")
 
-        # Commit một lần duy nhất
+                # Xóa block
+                db.delete(block)
+                db.flush()  # Flush ngay để chắc chắn xóa
+
+            # Xóa period
+            db.delete(period)
+            db.flush()  # Flush ngay để chắc chắn xóa
+
+        # IMPORTANT: Commit một lần cuối cùng
         db.commit()
+        print(f"DEBUG: Commit successful, deleted {deleted_count} records")
 
         return {
             "message": "Prediction raw data cleared successfully",
-            "deleted_records": deleted_count,
-            "periods_deleted": len(period_ids),
-            "blocks_deleted": len(block_ids)
+            "deleted_records": deleted_count
         }
 
     except Exception as e:
         db.rollback()
+        print(f"ERROR: {str(e)}")
         return {
             "error": str(e),
             "message": "Failed to clear prediction raw data"
