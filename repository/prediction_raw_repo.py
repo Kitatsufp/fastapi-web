@@ -1,5 +1,3 @@
-# prediction_raw_repo.py - SIMPLE VERSION (No Loop)
-
 from sqlalchemy.orm import Session
 from datetime import datetime, date, time
 import models
@@ -121,52 +119,3 @@ def get_all_metrics_formatted(user_id: int, target_date: date, db: Session):
         "eco2": [{"time": item["time"], "value": item["eco2"]} for item in data if item["eco2"] is not None],
         "etoh": [{"time": item["time"], "value": item["etoh"]} for item in data if item["etoh"] is not None]
     }
-
-
-def clear_prediction_raw_data(user_id: int, db: Session):
-    """
-    🚀 SIMPLE VERSION - Xóa hết trong 2 queries
-    Không loop, không flush, không phức tạp
-    """
-    try:
-        # Query 1: Xóa tất cả PredictionRawData của user này
-        raw_deleted = db.query(models.PredictionRawData).filter(
-            models.PredictionRawData.block_id.in_(
-                db.query(models.SensorTimeBlock.id).filter(
-                    models.SensorTimeBlock.period_id.in_(
-                        db.query(models.Period.id).filter(
-                            models.Period.user_id == user_id
-                        )
-                    )
-                )
-            )
-        ).delete(synchronize_session=False)
-
-        # Query 2: Xóa tất cả SensorTimeBlock của user này
-        db.query(models.SensorTimeBlock).filter(
-            models.SensorTimeBlock.period_id.in_(
-                db.query(models.Period.id).filter(
-                    models.Period.user_id == user_id
-                )
-            )
-        ).delete(synchronize_session=False)
-
-        # Query 3: Xóa tất cả Period của user này
-        db.query(models.Period).filter(
-            models.Period.user_id == user_id
-        ).delete(synchronize_session=False)
-
-        # Commit một lần duy nhất
-        db.commit()
-
-        return {
-            "message": "Prediction raw data cleared successfully",
-            "deleted_records": raw_deleted
-        }
-
-    except Exception as e:
-        db.rollback()
-        return {
-            "error": str(e),
-            "message": "Failed to clear prediction raw data"
-        }
