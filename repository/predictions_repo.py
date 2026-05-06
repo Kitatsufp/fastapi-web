@@ -1,4 +1,4 @@
-# predictions_repo.py - PHIÊN BẢN FIXED
+# predictions_repo.py - SIMPLE VERSION (No Loop)
 
 from sqlalchemy.orm import Session
 from datetime import datetime, date, time
@@ -125,66 +125,47 @@ def get_all_metrics_formatted(user_id: int, target_date: date, db: Session):
 
 def clear_prediction_data(user_id: int, db: Session):
     """
-    ✅ FIXED VERSION - Xóa dữ liệu từ trong ra ngoài
-    Đảm bảo cascade delete hoạt động đúng
+    🚀 SIMPLE VERSION - Xóa hết trong 2 queries
+    Không loop, không flush, không phức tạp
     """
     try:
-        # Bước 1: Lấy tất cả periods của user
-        periods = db.query(models.Period).filter(
+        # Query 1: Xóa tất cả PredictionData của user này
+        prediction_deleted = db.query(models.PredictionData).filter(
+            models.PredictionData.block_id.in_(
+                db.query(models.SensorTimeBlock.id).filter(
+                    models.SensorTimeBlock.period_id.in_(
+                        db.query(models.Period.id).filter(
+                            models.Period.user_id == user_id
+                        )
+                    )
+                )
+            )
+        ).delete(synchronize_session=False)
+
+        # Query 2: Xóa tất cả SensorTimeBlock của user này
+        db.query(models.SensorTimeBlock).filter(
+            models.SensorTimeBlock.period_id.in_(
+                db.query(models.Period.id).filter(
+                    models.Period.user_id == user_id
+                )
+            )
+        ).delete(synchronize_session=False)
+
+        # Query 3: Xóa tất cả Period của user này
+        db.query(models.Period).filter(
             models.Period.user_id == user_id
-        ).all()
+        ).delete(synchronize_session=False)
 
-        print(f"DEBUG: Found {len(periods)} periods")
-        deleted_count = 0
-
-        if not periods:
-            return {
-                "message": "No prediction data found to clear",
-                "deleted_records": 0
-            }
-
-        # Bước 2: Loại qua từng period và xóa từng cái
-        for period in periods:
-            print(f"DEBUG: Processing period {period.id}")
-
-            # Lấy tất cả blocks của period
-            blocks = db.query(models.SensorTimeBlock).filter(
-                models.SensorTimeBlock.period_id == period.id
-            ).all()
-
-            print(f"DEBUG: Found {len(blocks)} blocks in period {period.id}")
-
-            # Xóa từng block (sẽ auto xóa prediction_data nhờ relationship)
-            for block in blocks:
-                # Xóa PredictionData trực tiếp trước
-                prediction_data_count = db.query(models.PredictionData).filter(
-                    models.PredictionData.block_id == block.id
-                ).delete(synchronize_session=False)
-
-                deleted_count += prediction_data_count
-                print(
-                    f"DEBUG: Deleted {prediction_data_count} prediction data")
-
-                # Xóa block
-                db.delete(block)
-                db.flush()  # Flush ngay để chắc chắn xóa
-
-            # Xóa period
-            db.delete(period)
-            db.flush()  # Flush ngay để chắc chắn xóa
-
-        # IMPORTANT: Commit một lần cuối cùng
+        # Commit một lần duy nhất
         db.commit()
-        print(f"DEBUG: Commit successful, deleted {deleted_count} records")
 
         return {
             "message": "Prediction data cleared successfully",
-            "deleted_records": deleted_count
+            "deleted_records": prediction_deleted
         }
 
     except Exception as e:
         db.rollback()
-        print(f"ERROR: {str(e)}")
         return {
             "error": str(e),
             "message": "Failed to clear prediction data"
