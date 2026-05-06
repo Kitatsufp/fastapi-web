@@ -1,3 +1,5 @@
+# prediction_raw_repo.py - PHIÊN BẢN TỐI ƯU (FAST)
+
 from sqlalchemy.orm import Session
 from datetime import datetime, date, time
 import models
@@ -122,31 +124,63 @@ def get_all_metrics_formatted(user_id: int, target_date: date, db: Session):
 
 
 def clear_prediction_raw_data(user_id: int, db: Session):
-    """Xóa toàn bộ dữ liệu prediction raw của user"""
-    # Lấy tất cả periods của user
-    periods = db.query(models.Period).filter(
-        models.Period.user_id == user_id
-    ).all()
-
-    deleted_count = 0
-
-    for period in periods:
-        # Lấy tất cả blocks của period
-        blocks = db.query(models.SensorTimeBlock).filter(
-            models.SensorTimeBlock.period_id == period.id
+    """
+    🚀 PHIÊN BẢN TỐI ƯU - Xóa toàn bộ prediction raw data nhanh chóng
+    Sử dụng bulk delete thay vì loop
+    """
+    try:
+        # Bước 1: Lấy danh sách ID của tất cả periods của user
+        period_ids = db.query(models.Period.id).filter(
+            models.Period.user_id == user_id
         ).all()
 
-        for block in blocks:
-            # Xóa prediction raw data
-            deleted_count += db.query(models.PredictionRawData).filter(
-                models.PredictionRawData.block_id == block.id
-            ).delete()
+        period_ids = [p[0] for p in period_ids]
 
-            # Xóa block
-            db.delete(block)
+        if not period_ids:
+            return {
+                "message": "No prediction raw data found to clear",
+                "deleted_records": 0
+            }
 
-        # Xóa period
-        db.delete(period)
+        # Bước 2: Lấy danh sách ID của tất cả blocks thuộc các periods
+        block_ids = db.query(models.SensorTimeBlock.id).filter(
+            models.SensorTimeBlock.period_id.in_(period_ids)
+        ).all()
 
-    db.commit()
-    return {"message": "Prediction raw data cleared successfully", "deleted_records": deleted_count}
+        block_ids = [b[0] for b in block_ids]
+        deleted_count = 0
+
+        # Bước 3: Xóa prediction raw data (bulk delete - rất nhanh)
+        if block_ids:
+            deleted_count = db.query(models.PredictionRawData).filter(
+                models.PredictionRawData.block_id.in_(block_ids)
+            ).delete(synchronize_session=False)
+
+        # Bước 4: Xóa sensor time blocks (bulk delete)
+        if block_ids:
+            db.query(models.SensorTimeBlock).filter(
+                models.SensorTimeBlock.id.in_(block_ids)
+            ).delete(synchronize_session=False)
+
+        # Bước 5: Xóa periods (bulk delete)
+        if period_ids:
+            db.query(models.Period).filter(
+                models.Period.id.in_(period_ids)
+            ).delete(synchronize_session=False)
+
+        # Commit một lần duy nhất
+        db.commit()
+
+        return {
+            "message": "Prediction raw data cleared successfully",
+            "deleted_records": deleted_count,
+            "periods_deleted": len(period_ids),
+            "blocks_deleted": len(block_ids)
+        }
+
+    except Exception as e:
+        db.rollback()
+        return {
+            "error": str(e),
+            "message": "Failed to clear prediction raw data"
+        }
